@@ -1,3 +1,6 @@
+#create backup
+netsh advfirewall export "C:\fwbackup.wfw"
+
 #set initial firewall state, block all traffic
 Set-NetFirewallProfile -Profile Domain,Private,Public `
 -DefaultInboundAction Block -DefaultOutboundAction Block -EnableStealthModeForIPsec true `
@@ -12,4 +15,5 @@ Remove-NetFirewallRule
 New-NetFirewallRule -DisplayName "Remote Desktop Protocol" -Direction Inbound -Action Allow -LocalPort 3389
 
 New-NetFirewallRule -DisplayName "HTTPS" -Direction Outbound -Protocol TCP -Action Allow -RemotePort 443
+
 
