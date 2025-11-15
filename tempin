@@ -13,21 +13,9 @@ foreach ($user in $acc) {
 }
 
 
-try {
-    $krb = Get-ADUser -Filter { SamAccountName -eq "krbtgt" } -Properties DistinguishedName,userAccountControl
-    $dn = $krb.DistinguishedName
+nltest /dsgetdc:YOURDOMAIN
 
-    $entry = New-Object System.DirectoryServices.DirectoryEntry("LDAP://$dn")
-    
-    $uac = $entry.Properties["userAccountControl"].Value
-    $new = $uac -band (-bnot 2)
 
-    $entry.Properties["userAccountControl"].Value = $new
-    $entry.CommitChanges()
+Get-ADUser -Filter 'SamAccountName -like "krbtgt*"' -Properties Enabled,DistinguishedName
 
-    Write-Host "krbtgt successfully enabled."
-}
-catch {
-    Write-Host "FAILED: $($_.Exception.Message)"
-}
 
