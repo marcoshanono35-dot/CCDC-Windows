@@ -13,17 +13,26 @@ foreach ($user in $acc) {
 }
 
 
-# Bind directly to the krbtgt account (no AD cmdlet restrictions)
-$krbtgt = [ADSI]"LDAP://cn=krbtgt,cn=Users,dc=mindmend,dc=ai"
+try {
+    # Find the real krbtgt DN
+    $krb = Get-ADUser -Filter { SamAccountName -eq "krbtgt" } -Properties userAccountControl
+    $dn = $krb.DistinguishedName
 
-# Read current userAccountControl
-$uac = $krbtgt.userAccountControl[0]
+    Write-Host "Found krbtgt at: $dn"
 
-# Clear the DISABLED flag (0x2)
-$newUac = $uac -band (-bnot 2)
+    # Bind directly with ADSI (bypasses built-in account restrictions)
+    $adsi = [ADSI]("LDAP://" + $dn)
 
-# Write the new value
-$krbtgt.userAccountControl = $newUac
-$krbtgt.CommitChanges()
+    # Get current UAC
+    $uac = $adsi.userAccountControl[0]
+    $newUac = $uac -band (-bnot 2)  # Clear the disable bit
 
-Write-Host "krbtgt account has been re-enabled."
+    # Apply change
+    $adsi.userAccountControl = $newUac
+    $adsi.CommitChanges()
+
+    Write-Host "SUCCESS: krbtgt has been re-enabled."
+}
+catch {
+    Write-Host "ERROR:" $_
+}
