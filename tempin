@@ -11,3 +11,7 @@ foreach ($user in $acc) {
         Write-Host "Disabled AD account: $user"
     }
 }
+
+
+Get-ADUser -Filter 'Enabled -eq $false' |
+    ForEach-Object { Enable-ADAccount -Identity $_.SamAccountName }
