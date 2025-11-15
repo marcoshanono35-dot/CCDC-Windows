@@ -13,17 +13,17 @@ foreach ($user in $acc) {
 }
 
 
-try {
-    $acct = Get-ADUser "krbtgt" -Properties userAccountControl -ErrorAction Stop
+# Bind directly to the krbtgt account (no AD cmdlet restrictions)
+$krbtgt = [ADSI]"LDAP://cn=krbtgt,cn=Users,dc=YOURDOMAIN,dc=COM"
 
-    $uac = $acct.userAccountControl
-    $newUac = $uac -band (-bnot 2)   # Remove the "disabled" bit
+# Read current userAccountControl
+$uac = $krbtgt.userAccountControl[0]
 
-    Set-ADUser -Identity "krbtgt" -Replace @{ userAccountControl = $newUac }
+# Clear the DISABLED flag (0x2)
+$newUac = $uac -band (-bnot 2)
 
-    Write-Host "Re-enabled: krbtgt"
-}
-catch {
-    Write-Host "Could not re-enable krbtgt: $_"
-}
+# Write the new value
+$krbtgt.userAccountControl = $newUac
+$krbtgt.CommitChanges()
 
+Write-Host "krbtgt account has been re-enabled."
