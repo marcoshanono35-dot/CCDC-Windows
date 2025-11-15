@@ -13,25 +13,17 @@ foreach ($user in $acc) {
 }
 
 
-$builtins = @(
-    "administrator",
-    "guest",
-    "krbtgt",
-    "defaultaccount",
-    "dgonzalez"
-)
+try {
+    $acct = Get-ADUser "krbtgt" -Properties userAccountControl -ErrorAction Stop
 
-foreach ($user in $builtins) {
-    try {
-        $acct = Get-ADUser $user -Properties userAccountControl -ErrorAction Stop
-        $uac = $acct.userAccountControl
-        $newUac = $uac -band (-bnot 2)   # Clear the DISABLED flag
+    $uac = $acct.userAccountControl
+    $newUac = $uac -band (-bnot 2)   # Remove the "disabled" bit
 
-        Set-ADUser -Identity $user -Replace @{ userAccountControl = $newUac }
-        Write-Host "Re-enabled: $user"
-    }
-    catch {
-        Write-Host "Could not process $user: $_"
-    }
+    Set-ADUser -Identity "krbtgt" -Replace @{ userAccountControl = $newUac }
+
+    Write-Host "Re-enabled: krbtgt"
+}
+catch {
+    Write-Host "Could not re-enable krbtgt: $_"
 }
 
