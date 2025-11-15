@@ -23,6 +23,20 @@ Get-ADUser -Filter 'SamAccountName -like "krbtgt*"' -Properties Enabled,Distingu
 $krb = Get-ADUser -Filter { SamAccountName -eq "krbtgt" } -Properties DistinguishedName,userAccountControl
 $dn = $krb.DistinguishedName
 
+$krb = Get-ADUser -Filter { SamAccountName -eq "krbtgt" } -Properties DistinguishedName,userAccountControl
+$dn  = $krb.DistinguishedName
+
+
+
+$entry = New-Object System.DirectoryServices.DirectoryEntry("LDAP://$dn")
+$uac   = $entry.Properties["userAccountControl"].Value
+$newUac = $uac -band (-bnot 2)   # Remove disabled bit
+$entry.Properties["userAccountControl"].Value = $newUac
+$entry.CommitChanges()
+
+Write-Host "krbtgt successfully enabled"
+
+
 $entry = [ADSI]("LDAP://$dn")
 
 $krb | Select SamAccountName, AdminCount, Enabled
