@@ -33,20 +33,30 @@ foreach ($p in $maliciousPorts) {
     }
 }
 
-# All PIDs
-$PIDs = netstat -ano | ForEach-Object {
-    $columns = ($_ -split '\s+') | Where-Object { $_ -ne '' }  # remove empty strings
-    if ($columns.Length -ge 5 -and $columns[-1] -match '^\d+$') {
-        $columns[-1]  # PID is last column
+#Get Process Associated
+Get-NetTCPConnection -State Listen | ForEach-Object {
+    $ProcessID = $_.OwningProcess
+    $Process = Get-Process -Id $ProcessID -ErrorAction SilentlyContinue
+    if ($Process) {
+        [PSCustomObject]@{
+            LocalAddress   = $_.LocalAddress
+            LocalPort      = $_.LocalPort
+            RemoteAddress  = $_.RemoteAddress
+            RemotePort     = $_.RemotePort
+            State          = $_.State
+            ProcessName    = $Process.ProcessName
+            ProcessId      = $ProcessID
+        }
     }
-} | Select-Object -Unique
-
-
-foreach ($processid in $PIDs) {
-    try {
-        $proc = Get-Process -Id $processid -ErrorAction Stop
-        Write-Host "$processid => $($proc.ProcessName)"
-    } catch {
-        Write-Host "$processid => (process not found)"
+    else {
+        [PSCustomObject]@{
+            LocalAddress   = $_.LocalAddress
+            LocalPort      = $_.LocalPort
+            RemoteAddress  = $_.RemoteAddress
+            RemotePort     = $_.RemotePort
+            State          = $_.State
+            ProcessName    = "Unknown"
+            ProcessId      = $ProcessID
+        }
     }
-}
+} | Format-Table #For better reading.
