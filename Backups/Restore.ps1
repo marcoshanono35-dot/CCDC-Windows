@@ -35,3 +35,4 @@ Restart-Service DNS
 Restart-Service Netlogon
 Write-Host "Restore Complete. Testing AD..." -ForegroundColor Yellow
 nltest /dsgetdc:
+ 
