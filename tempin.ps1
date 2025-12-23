@@ -1,26 +1,36 @@
-$BackupPath = "C:\DNS_Backup" 
-
+$BackupPath = "C:\DNS_Backup"
 $ZoneList = Import-Csv "$BackupPath\ZoneList.csv"
-foreach ($Z in $ZoneList) {
-    if ($Z.IsAutoCreated -eq $false) {
-        try {
-            Add-DnsServerPrimaryZone -Name $Z.ZoneName -ReplicationScope "Domain" -ErrorAction SilentlyContinue
-            Write-Host "Zone Check: $($Z.ZoneName)" -ForegroundColor Cyan
-        } catch {}
+
+Write-Host "Starting Restore..." -ForegroundColor Cyan
+
+Copy-Item "$BackupPath\*.dns.bak" "C:\Windows\System32\dns"
+
+foreach ($Row in $ZoneList) {
+    $Zone = $Row.ZoneName
+    
+    if ($Zone -eq "." -or $Zone -eq "TrustAnchors") { continue }
+
+    $BakFile = "C:\Windows\System32\dns\$Zone.dns.bak"
+    $RealFile = "C:\Windows\System32\dns\$Zone.dns"
+    
+    if (Test-Path $BakFile) {
+        Move-Item $BakFile $RealFile -Force
+    }
+
+    try {
+        Write-Host "  Loading Zone: $Zone" -NoNewline
+        dnscmd /ZoneAdd $Zone /Primary /file "$Zone.dns" /load | Out-Null
+        Write-Host " [OK]" -ForegroundColor Green
+
+        Write-Host "  Converting to AD: $Zone" -NoNewline
+        dnscmd /ZoneResetType $Zone /dsprimary | Out-Null
+        Write-Host " [OK]" -ForegroundColor Green
+    }
+    catch {
+        Write-Warning "  Failed to restore $Zone"
     }
 }
 
-$XMLFiles = Get-ChildItem "$BackupPath\*.xml"
-foreach ($File in $XMLFiles) {
-    $ZoneName = $File.BaseName
-    $Records = Import-Clixml $File.FullName
-    
-    foreach ($Record in $Records) {
-        try {
-            Add-DnsServerResourceRecord -ZoneName $ZoneName -InputObject $Record -ErrorAction SilentlyContinue
-        } catch {
-            Write-Warning "Failed to add $($Record.HostName) to $ZoneName"
-        }
-    }
-    Write-Host "Restored records for $ZoneName" -ForegroundColor Green
-}
+Restart-Service DNS
+Write-Host "Restore Complete. Testing AD..." -ForegroundColor Yellow
+nltest /dsgetdc:
