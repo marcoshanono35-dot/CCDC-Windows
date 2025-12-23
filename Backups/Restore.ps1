@@ -48,9 +48,12 @@ while ((Get-Service Netlogon).Status -ne 'Running') {
     Start-Sleep -Seconds 1 
 }
 
+Write-Host "--- FORCING AD READINESS ---" -ForegroundColor Cyan
+nltest /dsregdns
 ipconfig /registerdns
-nltest /dsregdns 
+klist purge -li 0x3e7 
 
+Start-Sleep -Seconds 5
 Write-Host "--- PHASE 3: AD CONVERSION (SMART RETRY) ---" -ForegroundColor Cyan
 
 while ($TryCount -lt $MaxTries -and -not $Success) {
