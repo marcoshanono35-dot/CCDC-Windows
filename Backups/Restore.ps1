@@ -1,7 +1,17 @@
 $BackupPath = "C:\DNS_Backup"
 $ZoneList = Import-Csv "$BackupPath\ZoneList.csv"
-$trycount = 0
-$success = $false
+$MaxTries = 30
+$TryCount = 0
+$Success = $false
+
+Write-Host "--- PHASE 0: BINARY CHECK ---" -ForegroundColor Cyan
+$RequiredFeatures = @("DNS", "AD-Domain-Services")
+foreach ($Feature in $RequiredFeatures) {
+    if ((Get-WindowsFeature $Feature).InstallState -ne "Installed") {
+        Write-Warning "$Feature Role not found! Reinstalling..."
+        Install-WindowsFeature $Feature -IncludeManagementTools
+    }
+}
 
 Write-Host "--- PHASE 1: HEALING CONFIGURATION ---" -ForegroundColor Cyan
 
@@ -41,11 +51,12 @@ while ((Get-Service Netlogon).Status -ne 'Running') {
 ipconfig /registerdns
 nltest /dsregdns 
 
-Write-Host "--- PHASE 3: AD CONVERSION (RETRY LOOP) ---" -ForegroundColor Cyan
+Write-Host "--- PHASE 3: AD CONVERSION (SMART RETRY) ---" -ForegroundColor Cyan
 
-while ($trycount -lt 5 -and $success -eq $false) {
-    $trycount++
-    Write-Host "Attempting to Convert zones to AD-Integrated..." -ForegroundColor Yellow
+
+while ($TryCount -lt $MaxTries -and -not $Success) {
+    $TryCount++
+    Write-Host "Attempt $TryCount of $MaxTries: Migrating to AD storage..." -ForegroundColor Yellow
     
     foreach ($Row in $ZoneList) {
         $Zone = $Row.ZoneName
@@ -55,19 +66,3 @@ while ($trycount -lt 5 -and $success -eq $false) {
 
     $CheckZone = ($ZoneList | Where-Object { $_.ZoneName -ne "TrustAnchors" })[0].ZoneName
     $Status = Get-DnsServerZone -Name $CheckZone -ErrorAction SilentlyContinue
-    
-    if ($Status.IsDsIntegrated -eq $true) {
-        $success = $true
-        Write-Host " [SUCCESS] Zones confirmed in Active Directory." -ForegroundColor Green
-    } else {
-        Write-Host " [WAITING] AD partition not ready. Retrying in 5 seconds..." -ForegroundColor Gray
-        Start-Sleep -Seconds 5
-    }
-}
-
-if (-not $success) {
-    Write-Error "CRITICAL: Zones failed to integrate after 5 attempts."
-}
-
-Write-Host "Restore Complete. Testing DC Locator..." -ForegroundColor Yellow
-nltest /dsgetdc:
