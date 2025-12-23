@@ -53,7 +53,6 @@ nltest /dsregdns
 
 Write-Host "--- PHASE 3: AD CONVERSION (SMART RETRY) ---" -ForegroundColor Cyan
 
-
 while ($TryCount -lt $MaxTries -and -not $Success) {
     $TryCount++
     Write-Host "Attempt $TryCount of $MaxTries: Migrating to AD storage..." -ForegroundColor Yellow
@@ -66,3 +65,25 @@ while ($TryCount -lt $MaxTries -and -not $Success) {
 
     $CheckZone = ($ZoneList | Where-Object { $_.ZoneName -ne "TrustAnchors" })[0].ZoneName
     $Status = Get-DnsServerZone -Name $CheckZone -ErrorAction SilentlyContinue
+
+    if ($Status.IsDsIntegrated -eq $true) {
+        Write-Host " [SUCCESS] Zones confirmed in Active Directory database." -ForegroundColor Green
+    } 
+    else {
+        if ($TryCount -eq 15) { 
+            Write-Host " [ACTION] Mid-point reached. Restarting Netlogon to force sync..." -ForegroundColor Cyan
+            Restart-Service Netlogon -Force 
+        }
+        
+        Write-Host " [WAITING] AD partition not ready. Retrying in 5 seconds..." -ForegroundColor Gray
+        Start-Sleep -Seconds 10  
+    }
+   
+}
+
+if (-not $Success) { 
+    Write-Error "CRITICAL: DNS failed to integrate after $MaxTries attempts." 
+}
+
+Write-Host "Restore Process Finished." -ForegroundColor Yellow
+nltest /dsgetdc:
