@@ -55,7 +55,7 @@ Write-Host "--- PHASE 3: AD CONVERSION (SMART RETRY) ---" -ForegroundColor Cyan
 
 while ($TryCount -lt $MaxTries -and -not $Success) {
     $TryCount++
-    Write-Host "Attempt $TryCount of $MaxTries: Migrating to AD storage..." -ForegroundColor Yellow
+    Write-Host "Attempting to Migrate to AD storage..." -ForegroundColor Yellow
     
     foreach ($Row in $ZoneList) {
         $Zone = $Row.ZoneName
