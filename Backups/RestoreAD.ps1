@@ -24,9 +24,7 @@ if ($SafeMode) {
     Write-Host "Restoring database... Watch for the manual popup dialog!" -ForegroundColor Yellow
     @("activate instance ntds", "authoritative restore", "restore database", "quit", "quit") | ntdsutil
 
-    Write-Host "--- Database Restored. Removing SafeBoot flag and Rebooting... ---" -ForegroundColor Green
-    bcdedit /deletevalue {current} safeboot
-    Restart-Computer -Force
+    
 } 
 else {
     Write-Host "[*] NORMAL MODE DETECTED: Proceeding with Surgical Fixes." -ForegroundColor Yellow
