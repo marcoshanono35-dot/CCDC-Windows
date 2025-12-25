@@ -18,18 +18,7 @@ if ($SafeMode) {
     Write-Host "[!] DSRM DETECTED: Proceeding with Actual Database Restore." -ForegroundColor Yellow
     
     # PHASE 1: THE BRAIN (NTDS.DIT)
-    $CommandFile = "$env:TEMP\ntds_restore.txt"
-    $NtdsCommands = @(
-        "activate instance ntds",
-        "ifm",
-        "restore database from path `"$IFMPath\Active Directory`"",
-        "quit",
-        "authoritative restore",
-        "restore database",
-        "quit",
-        "quit"
-    )
-    $NtdsCommands | Out-File $CommandFile -Encoding ASCII
+    ntdsutil "activate instance ntds" "authoritative restore" "restore database" quit quit
 
     Write-Host "Restoring from IFM Backup... Watch for the manual popup dialog!" -ForegroundColor Yellow
     ntdsutil /s $CommandFile
