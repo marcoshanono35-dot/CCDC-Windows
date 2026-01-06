@@ -11,7 +11,7 @@ if ($SafeMode) {
     
     Write-Host "STEP 1: Database file seeded to C:\Windows\NTDS\ntds.dit" -ForegroundColor Cyan
     Write-Host "STEP 2: Run this exact command to restore the GREAT.CRETACEOUS domain:" -ForegroundColor Cyan
-    Write-Host "ntdsutil `"activate instance ntds`" `"authoritative restore`" `"restore subtree \`"DC=GREAT,DC=CRETACEOUS\`"`" quit quit"
+    Write-Host "ntdsutil `"activate instance ntds`" `"authoritative restore`" `"restore subtree \`"DC=GREAT,DC=CRETACEOUS\`"`" quit quit" "(Change to comp specific Domain Name)"
     Write-Host "STEP 3: bcdedit /deletevalue {current} safeboot && Restart-Computer" -ForegroundColor Cyan
 } 
 else {
