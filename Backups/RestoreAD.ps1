@@ -21,24 +21,25 @@ else {
     Write-Host "------------------------------------------------------------"
 
     # STEP 1: Fix System Time
-    # Fixes the 'SEC_E_CERT_EXPIRED' error seen in image_6db087.png
+    # Resolves SEC_E_CERT_EXPIRED errors (GitHub/SSL).
     Write-Host "[*] STEP 1: Syncing System Time..." -ForegroundColor Cyan
-    Set-Date -Date "01/06/2026 17:50" 
+    Set-Date -Date "01/06/2026 18:10" 
 
-    # STEP 2: Import GPOs
-    # Explicitly load module to fix the error in image_7cac84.png
+    # STEP 2: Import GPOs (Bypassing Get-GPOBackup)
     if (Test-Path $GPOPath) {
         Write-Host "[*] STEP 2: Importing GPO Exports..." -ForegroundColor Cyan
-        Import-Module GroupPolicy -ErrorAction SilentlyContinue 
         Get-ChildItem $GPOPath -Directory | ForEach-Object {
+            $GUID = $_.Name
+            Write-Host " Attempting to import GPO folder: $GUID" -ForegroundColor Gray
+            
+            # METHOD: We use the Backup GUID as the TargetName. 
+            # If the GPO exists, it overwrites it. If not, it creates a GPO named with that GUID.
+            # You can rename it in the GPMC console later.
             try {
-                # This command was failing in image_7cac84.png; explicit module load fixes it.
-                $Backup = Get-GPOBackup -BackupId $_.Name -Path $GPOPath
-                Write-Host " Importing GPO: $($Backup.DisplayName)" -ForegroundColor Gray
-                # Fixes the 'TargetName' error from image_7ca5e1.jpg
-                Import-GPO -BackupId $_.Name -Path $GPOPath -TargetName $Backup.DisplayName -CreateIfNeeded | Out-Null
+                Import-GPO -BackupId $GUID -Path $GPOPath -TargetName $GUID -CreateIfNeeded -ErrorAction Stop | Out-Null
+                Write-Host " [+] Successfully imported GUID $GUID" -ForegroundColor Green
             } catch {
-                Write-Host " [!] Failed to import GPO folder: $($_.Name)" -ForegroundColor Red
+                Write-Host " [!] Failed to import $GUID. Error: $($_.Exception.Message)" -ForegroundColor Red
             }
         }
     }
