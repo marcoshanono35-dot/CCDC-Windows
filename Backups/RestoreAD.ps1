@@ -1,10 +1,8 @@
-# --- CONFIGURATION ---
 $BackupPath = "C:\AD_Backup"
 $IFMPath = "$BackupPath\AD_Database"
 $UserCSV = "$BackupPath\UserSnapshot.csv"
 $GPOPath = "$BackupPath\GPOs"
 
-# 1. CHECK FOR DSRM (SAFE MODE)
 $SafeMode = Test-Path "HKLM:\System\CurrentControlSet\Control\SafeBoot\Option"
 
 if ($SafeMode) {
@@ -20,21 +18,16 @@ else {
     Write-Host "[*] NORMAL MODE DETECTED: Proceeding with Surgical Fixes." -ForegroundColor Yellow
     Write-Host "------------------------------------------------------------"
 
-    # STEP 1: Fix System Time
-    # Resolves SEC_E_CERT_EXPIRED errors (GitHub/SSL).
+  
     Write-Host "[*] STEP 1: Syncing System Time..." -ForegroundColor Cyan
     Set-Date -Date "01/06/2026 18:10" 
 
-    # STEP 2: Import GPOs (Bypassing Get-GPOBackup)
     if (Test-Path $GPOPath) {
         Write-Host "[*] STEP 2: Importing GPO Exports..." -ForegroundColor Cyan
         Get-ChildItem $GPOPath -Directory | ForEach-Object {
             $GUID = $_.Name
             Write-Host " Attempting to import GPO folder: $GUID" -ForegroundColor Gray
             
-            # METHOD: We use the Backup GUID as the TargetName. 
-            # If the GPO exists, it overwrites it. If not, it creates a GPO named with that GUID.
-            # You can rename it in the GPMC console later.
             try {
                 Import-GPO -BackupId $GUID -Path $GPOPath -TargetName $GUID -CreateIfNeeded -ErrorAction Stop | Out-Null
                 Write-Host " [+] Successfully imported GUID $GUID" -ForegroundColor Green
@@ -44,7 +37,6 @@ else {
         }
     }
 
-    # STEP 3: Reconstruct Users from CSV
     if (Test-Path $UserCSV) {
         Write-Host "[*] STEP 3: Reconstructing Users from CSV..." -ForegroundColor Cyan
         $Users = Import-Csv -Path $UserCSV
