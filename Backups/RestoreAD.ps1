@@ -15,8 +15,8 @@ if ($SafeMode) {
     Write-Host "[!] DSRM DETECTED: Use these commands to restore the database." -ForegroundColor Yellow
     Write-Host "------------------------------------------------------------"
     
-    Write-Host "STEP 1: Seed the database file (Initializes Jet Engine)" -ForegroundColor Cyan
-    Write-Host "Copy-Item -Path `"$IFMPath\Active Directory\ntds.dit`" -Destination `"C:\Windows\NTDS\ntds.dit`" -Force"
+    Write-Host "STEP 1: Seeding the database file (Initializes Jet Engine)..." -ForegroundColor Cyan
+    Copy-Item -Path "$IFMPath\Active Directory\ntds.dit" -Destination "C:\Windows\NTDS\ntds.dit" -Force
     Write-Host ""
 
     Write-Host "STEP 2: Run ntdsutil and enter these sub-commands" -ForegroundColor Cyan
