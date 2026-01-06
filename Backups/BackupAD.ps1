@@ -1,3 +1,4 @@
+bcdedit /set safeboot dsrepair
 ntdsutil "set dsrm password" "reset password on server null" q q
 
 $BackupPath = "C:\AD_Backup"
