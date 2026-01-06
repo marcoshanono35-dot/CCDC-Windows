@@ -12,22 +12,20 @@ Write-Host "`n--- MANUAL RESTORATION GUIDE ---" -ForegroundColor Cyan
 Write-Host "Because auto-entry is failing, follow these steps exactly." -ForegroundColor White
 
 if ($SafeMode) {
-    Write-Host "[!] DSRM DETECTED: Use these commands to restore the database." -ForegroundColor Yellow
-    Write-Host "------------------------------------------------------------"
+    Write-Host "[!] DSRM DETECTED: Preparing database for restore." -ForegroundColor Yellow
     
-    Write-Host "STEP 1: Seeding the database file (Initializes Jet Engine)..." -ForegroundColor Cyan
+    # --- INSERT THE COMMAND HERE ---
+    # This seeds the database so ntdsutil has a file to work on.
     Copy-Item -Path "$IFMPath\Active Directory\ntds.dit" -Destination "C:\Windows\NTDS\ntds.dit" -Force
-    Write-Host ""
+    # -------------------------------
 
-    Write-Host "STEP 2: Run ntdsutil and enter these sub-commands" -ForegroundColor Cyan
-    Write-Host "Type 'ntdsutil' then enter each of these:"
-    Write-Host "  activate instance ntds"
-    Write-Host "  authoritative restore"
-    Write-Host "  restore database"
-    Write-Host "  (Click 'YES' on the popup dialog box on the desktop)"
-    Write-Host "  quit"
-    Write-Host "  quit"
-    Write-Host ""
+    Write-Host "STEP 1: Database file seeded to C:\Windows\NTDS\ntds.dit" -ForegroundColor Cyan
+    
+    # Verify the shutdown state as a sanity check.
+    esentutl /mh C:\Windows\NTDS\ntds.dit
+    
+    Write-Host "STEP 2: Run this exact command to bypass syntax errors:" -ForegroundColor Cyan
+    Write-Host "ntdsutil `"activate instance ntds`" `"authoritative restore`" `"restore database`" quit quit"
 
     Write-Host "STEP 3: Return to Normal Mode" -ForegroundColor Cyan
     Write-Host "bcdedit /deletevalue {current} safeboot"
